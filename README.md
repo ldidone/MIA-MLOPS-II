@@ -51,8 +51,8 @@ flowchart LR
     AF -->|train + log| MLflow[MLflow Tracking]
     MLflow -->|artifacts| MinIO
     MLflow -->|metadata| PG[(Postgres)]
-    AF -->|set @champion alias| MLflow
-    API[FastAPI] -->|models:/name@champion| MLflow
+    AF -->|set champion alias| MLflow
+    API[FastAPI] -->|load champion model| MLflow
     UI[Streamlit] -->|POST /predict| API
     HFSpaces["HF Spaces<br/>(Docker)"] -.->|embedded mode| UI
 ```
