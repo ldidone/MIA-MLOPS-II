@@ -321,65 +321,40 @@ The app reads `APP_MODE` from the environment:
 
 **Live app:** [https://huggingface.co/spaces/ldidone/california-housing-mia-mlops-ii](https://huggingface.co/spaces/ldidone/california-housing-mia-mlops-ii)
 
-Hugging Face **Docker Spaces** expect a `Dockerfile` at the **repository root**. This repo ships `[Dockerfile](Dockerfile)` (same recipe as `[docker/streamlit-spaces.Dockerfile](docker/streamlit-spaces.Dockerfile)`) plus a small YAML header at the top of this README so the Space card and SDK are picked up automatically when the Space is linked to this GitHub repository.
+[Hugging Face Docker Spaces](https://huggingface.co/docs/hub/spaces-sdks-docker) use a `Dockerfile` at the **repository root**. In this project that is `[Dockerfile](Dockerfile)` (same as `[docker/streamlit-spaces.Dockerfile](docker/streamlit-spaces.Dockerfile)`). If you connect a GitHub repo to a Space, you can add [README metadata](https://huggingface.co/docs/hub/spaces-config-reference) (YAML between `---` delimiters) for the Space card; otherwise set title and SDK in the Space **Settings** on the Hub.
 
-The image:
+The Docker image:
 
-- sets `APP_MODE=embedded` and loads `models/model.pkl` plus `models/feature_metadata.json` from disk (no FastAPI or MLflow in the Space),
-- installs `libgomp1` for XGBoost wheels on Debian slim,
+- sets `APP_MODE=embedded` and loads `models/model.pkl` and `models/feature_metadata.json` (no FastAPI or MLflow in the Space),
+- installs `libgomp1` for XGBoost on Debian slim,
 - exposes **port 7860** (required by Spaces).
 
-### Before you push
+### Before to push
 
-1. **Train once** so artifacts exist (see [training pipeline](#running-the-training-pipeline)), e.g. `make train-local` or run the Airflow DAG. That produces at least:
+1. **Train** so the artifacts exist (see [Running the training pipeline](#running-the-training-pipeline)), e.g. `make train-local` or the Airflow DAG. You need at least:
   - `models/model.pkl`
   - `models/feature_metadata.json`
-2. **Commit those files** to the branch you connect to the Space. The root `[.dockerignore](.dockerignore)` is written so Docker **includes** those two paths even though other files under `models/` stay ignored.
-3. Install **[Git LFS](https://git-lfs.github.com/)** (`brew install git-lfs`) — the HF Hub pre-receive hook **rejects** any binary file (`.pkl`, `.parquet`, …) that is not stored in LFS/Xet. The `make hf-space-push` workflow below handles LFS setup automatically on a dedicated deploy branch.
+2. **Commit** those files on the branch the Space will build. The root `[.dockerignore](.dockerignore)` keeps most of `models/` out of the build context but still allows these two files through.
+3. For large binaries, use **[Git LFS](https://git-lfs.github.com/)** (e.g. `brew install git-lfs`). The Hub may reject binaries that are not stored with LFS. Option B below includes a deploy script that configures LFS for common artifact extensions.
 
-### Option A — Link this GitHub repo (simplest)
+### `git push` to a Space (Hub-only or extra remote)
 
-1. **Push** your branch to GitHub (`main` or whichever branch you use) so it includes the root `[Dockerfile](Dockerfile)`, `models/model.pkl`, and `models/feature_metadata.json`.
-2. On Hugging Face: **New Space** → **Docker** (Docker SDK).
-3. **Connect** your GitHub account and pick this repository and branch.
-4. Leave **Dockerfile** at the repository root (default). Start the build, then open `https://<your-username>-<space-name>.hf.space`.
-
-Every future `git push` to that branch triggers a new Space build.
-
-### Option B — Push with `git` to a Space on the Hub
-
-Use this if you prefer the Space to live only on Hugging Face (no GitHub link), or you want a second deployment target.
-
-1. Install the CLI and log in: [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) — `hf auth login` (token from [Settings → Access Tokens](https://huggingface.co/settings/tokens)).
-2. Pick a **slug** for the Space (letters, numbers, hyphens), e.g. `california-housing-mia-mlops-ii`.
+1. Install the [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) and run `hf auth login` (token: [Access Tokens](https://huggingface.co/settings/tokens)).
+2. Choose a **Space slug** (letters, numbers, hyphens), e.g. `california-housing-mia-mlops-ii`.
 3. From the project root:
 
 ```bash
 export HF_SPACE=your-chosen-slug
-make hf-space-create          # creates https://huggingface.co/spaces/<you>/<HF_SPACE>
-make hf-space-remote          # adds (or updates) a git remote named "hf"
-make hf-space-push            # builds a clean orphan branch (LFS) -> force-pushes to hf/main
+make hf-space-create   # e.g. https://huggingface.co/spaces/<you>/<HF_SPACE>
+make hf-space-remote   # git remote "hf"
+make hf-space-push     # orphan deploy branch with LFS → force-push to hf/main
 ```
 
-`make hf-space-push` delegates to `[scripts/deploy_hf_space.sh](scripts/deploy_hf_space.sh)`. The script:
+`make hf-space-push` runs `[scripts/deploy_hf_space.sh](scripts/deploy_hf_space.sh)`. It checks for `git-lfs`, the model files, and the root `Dockerfile`; uses a separate git worktree; builds a minimal `hf-deploy` branch (see the script for the exact file list); applies LFS for `*.pkl`, `*.joblib`, `*.parquet`; and force-pushes to `hf/main`.
 
-- refuses to run unless `git-lfs`, `models/model.pkl`, `models/feature_metadata.json`, and the root `Dockerfile` are all present;
-- builds a **throwaway worktree** so your checked-out branch is untouched;
-- creates an orphan branch `hf-deploy` containing **only** what the Space needs (`Dockerfile`, `README.md`, `pyproject.toml`, `.dockerignore`, `conf/`, `src/`, `requirements/`, `models/model.pkl`, `models/feature_metadata.json`);
-- configures `.gitattributes` with LFS filters for `*.pkl`, `*.joblib`, `*.parquet`;
-- force-pushes that orphan branch as `hf/main` and removes the temporary worktree.
+`DRY_RUN=1 make hf-space-push` builds the deploy branch without pushing (inspect `.git/hf-deploy-worktree/` if needed).
 
-Use `DRY_RUN=1 make hf-space-push` to build the branch without pushing — useful for inspecting `.git/hf-deploy-worktree/` locally.
-
-Authentication for `git push` uses your Hub credentials (HTTPS + token as password, or [credential helper](https://huggingface.co/docs/hub/git-auth)).
-
-### Troubleshooting
-
-- **Push rejected: "contains binary files" / "Please use Xet"**: you pushed a branch with untracked `.pkl` / `.parquet` blobs. Run `make hf-space-push` — it rebuilds a clean LFS-aware branch and force-pushes it.
-- **Build fails on `COPY models`**: `model.pkl` / `feature_metadata.json` were not in the git revision the Space cloned. Commit them (or fix LFS pull on the Space side).
-- **App shows errors loading the model**: confirm `APP_MODE=embedded` (set in the Dockerfile) and that the pickle was produced by the same code version as `src/housing`.
-- **Hub shows `title: {{title}}`, `app_file: app.py`, or similar placeholders**: the Space is not using the **Docker** SDK, or the README metadata was stripped so the Hub fell back to a Gradio-style template. Open the Space on Hugging Face → **Settings** → **Space hardware** / SDK section and set the SDK to **Docker** (not Streamlit or Gradio). Do not add `app_file` for this repo — that key is for Gradio/static Spaces only. The YAML block at the top of this README must include `sdk: docker` and `app_port: 7860` (see [Spaces config reference](https://huggingface.co/docs/hub/spaces-config-reference)).
-- **You do not want the YAML header on GitHub**: remove the `---` … `---` block at the top of this README from your fork and instead set the Space metadata in the Hugging Face Space **Settings** (title, emoji, etc.); the Space will still build from the root `Dockerfile`.
+Authenticate `git push` with your Hub token (HTTPS) or a [credential helper](https://huggingface.co/docs/hub/git-auth).
 
 ### Local smoke test (same image Spaces runs)
 
@@ -460,7 +435,7 @@ The assignment statement references these for the broader federated/cloud servic
 - **Federated learning** — would require multiple training clients and a secure aggregation server (`Flower`, `TFF`). The current Airflow DAG is the centralised counterpart.
 - **Full security layers** — JWT auth, secrets manager, TLS termination, RBAC. Hooks are in place (environment variables, CORS) but the production-grade implementation is not delivered here.
 - **Drift monitoring / model performance monitoring** in production — a natural extension is to add an Evidently report task to the DAG and a Prometheus exporter on the API.
-- **CI/CD** — no GitHub Actions workflow is shipped. `make lint` and `make test` cover local quality gates.
+- **CI/CD** — there is no GitHub Actions workflow in the repo. `make lint` and `make test` are the local quality gates.
 
 ---
 
