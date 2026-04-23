@@ -1,0 +1,90 @@
+{
+  "target": "MedHouseVal",
+  "feature_groups": {
+    "numeric": [
+      "MedInc",
+      "HouseAge",
+      "AveRooms",
+      "AveBedrms",
+      "Population",
+      "AveOccup",
+      "Latitude",
+      "Longitude"
+    ],
+    "categorical": [],
+    "binary": []
+  },
+  "columns": [
+    {
+      "name": "MedInc",
+      "kind": "numeric",
+      "default": 3.54665,
+      "min": 0.4999,
+      "max": 15.0001,
+      "categories": []
+    },
+    {
+      "name": "HouseAge",
+      "kind": "numeric",
+      "default": 29.0,
+      "min": 1.0,
+      "max": 52.0,
+      "categories": []
+    },
+    {
+      "name": "AveRooms",
+      "kind": "numeric",
+      "default": 5.232180533022568,
+      "min": 0.8888888888888888,
+      "max": 141.9090909090909,
+      "categories": []
+    },
+    {
+      "name": "AveBedrms",
+      "kind": "numeric",
+      "default": 1.0497630331753554,
+      "min": 0.3333333333333333,
+      "max": 25.63636363636364,
+      "categories": []
+    },
+    {
+      "name": "Population",
+      "kind": "numeric",
+      "default": 1168.0,
+      "min": 3.0,
+      "max": 35682.0,
+      "categories": []
+    },
+    {
+      "name": "AveOccup",
+      "kind": "numeric",
+      "default": 2.8184628261097004,
+      "min": 0.6923076923076923,
+      "max": 1243.3333333333333,
+      "categories": []
+    },
+    {
+      "name": "Latitude",
+      "kind": "numeric",
+      "default": 34.26,
+      "min": 32.56,
+      "max": 41.95,
+      "categories": []
+    },
+    {
+      "name": "Longitude",
+      "kind": "numeric",
+      "default": -118.51,
+      "min": -124.35,
+      "max": -114.31,
+      "categories": []
+    }
+  ],
+  "target_stats": {
+    "min": 0.14999,
+    "max": 5.00001,
+    "mean": 2.068558169089147,
+    "std": 1.1539561587441385,
+    "median": 1.797
+  }
+}
