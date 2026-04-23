@@ -83,8 +83,11 @@ def load_from_disk(path: str | Path | None = None) -> ChampionModel:
 
 def load_model() -> ChampionModel:
     """Load the champion with graceful fallback to the local pickle file."""
+    settings = get_settings()
+    if settings.app_mode.lower() == "embedded":
+        return load_from_disk()
     try:
         return load_from_registry()
     except Exception as exc:
         logger.warning("MLflow load failed (%s). Falling back to disk.", exc)
-        return load_from_disk()
+    return load_from_disk()

@@ -18,6 +18,9 @@ data/processed/*
 !data/**/.gitkeep
 models/*
 !models/.gitkeep
+# Bundled into the Hugging Face Spaces image (embedded Streamlit mode).
+!models/model.pkl
+!models/feature_metadata.json
 reports/figures/*
 !reports/figures/.gitkeep
 

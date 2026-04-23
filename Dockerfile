@@ -1,6 +1,8 @@
+# Hugging Face Spaces (sdk: docker) expects this file at the repository root.
+# Kept in sync with docker/streamlit-spaces.Dockerfile — edit both when changing the Space image.
+#
 # Streamlit image for Hugging Face Spaces (sdk: docker).
 # Build context must be the repository root so ``COPY conf`` / ``COPY src`` work.
-# The repository root ``Dockerfile`` duplicates this recipe for HF Spaces.
 #
 # It runs the app in ``embedded`` mode: load ``models/model.pkl`` + feature metadata
 # from disk (no MLflow / API). Train locally or in docker-compose first, then commit

@@ -1,3 +1,15 @@
+---
+title: California Housing — MLOps demo
+emoji: 🏠
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+license: mit
+short_description: Streamlit regressor for California Housing (embedded model, Docker Space).
+---
+
 # MIA-MLOPS-II — California Housing MLOps Project
 
 End-to-end, container-first MLOps project for the MLOps II course (MIA master's degree). It trains, tracks, serves and consumes a **regression** model for scikit-learn's [California Housing dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.fetch_california_housing.html). The target is `MedHouseVal` — median house value per block group, in units of $100,000 — and the feature schema is auto-discovered from the ingested CSV, so the pipeline does not rely on hard-coded column names.
@@ -311,19 +323,63 @@ The app reads `APP_MODE` from the environment:
 
 ## Deploying the Streamlit app to Hugging Face Spaces
 
-The file [`docker/streamlit-spaces.Dockerfile`](docker/streamlit-spaces.Dockerfile) is a self-contained image that:
+Hugging Face **Docker Spaces** expect a `Dockerfile` at the **repository root**. This repo ships [`Dockerfile`](Dockerfile) (same recipe as [`docker/streamlit-spaces.Dockerfile`](docker/streamlit-spaces.Dockerfile)) plus a small YAML header at the top of this README so the Space card and SDK are picked up automatically when the Space is linked to this GitHub repository.
 
-* runs in `embedded` mode,
-* listens on port 7860 (required by Spaces),
-* bundles the champion pickle from `models/model.pkl`.
+The image:
 
-### Steps
+* sets `APP_MODE=embedded` and loads `models/model.pkl` plus `models/feature_metadata.json` from disk (no FastAPI or MLflow in the Space),
+* installs `libgomp1` for XGBoost wheels on Debian slim,
+* exposes **port 7860** (required by Spaces).
 
-1. Train the model at least once (see [training pipeline](#running-the-training-pipeline)) so `models/model.pkl` exists.
-2. Create a new **Docker Space** on Hugging Face.
-3. Push the project (or a minimal subset: `src/`, `conf/`, `models/`, `requirements/`, `docker/streamlit-spaces.Dockerfile`) to the Space.
-4. Rename or symlink `docker/streamlit-spaces.Dockerfile` to `Dockerfile` at the Space root, or configure it explicitly via the Space settings.
-5. The Space will build the image and expose the Streamlit UI at `https://<user>-<space>.hf.space`.
+### Before you push
+
+1. **Train once** so artifacts exist (see [training pipeline](#running-the-training-pipeline)), e.g. `make train-local` or run the Airflow DAG. That produces at least:
+   * `models/model.pkl`
+   * `models/feature_metadata.json`
+2. **Commit those files** to the branch you connect to the Space. The root [`.dockerignore`](.dockerignore) is written so Docker **includes** those two paths even though other files under `models/` stay ignored.
+3. If `model.pkl` is large, track it with **[Git LFS](https://git-lfs.github.com/)** before pushing so the Space build can fetch it.
+
+### Option A — Link this GitHub repo (simplest)
+
+1. **Push** your branch to GitHub (`main` or whichever branch you use) so it includes the root [`Dockerfile`](Dockerfile), `models/model.pkl`, and `models/feature_metadata.json`.
+2. On Hugging Face: **New Space** → **Docker** (Docker SDK).
+3. **Connect** your GitHub account and pick this repository and branch.
+4. Leave **Dockerfile** at the repository root (default). Start the build, then open `https://<your-username>-<space-name>.hf.space`.
+
+Every future `git push` to that branch triggers a new Space build.
+
+### Option B — Push with `git` to a Space on the Hub
+
+Use this if you prefer the Space to live only on Hugging Face (no GitHub link), or you want a second deployment target.
+
+1. Install the CLI and log in: [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) — `hf auth login` (token from [Settings → Access Tokens](https://huggingface.co/settings/tokens)).
+2. Pick a **slug** for the Space (letters, numbers, hyphens), e.g. `california-housing-mia-mlops-ii`.
+3. From the project root:
+
+```bash
+export HF_SPACE=your-chosen-slug
+make hf-space-create          # creates https://huggingface.co/spaces/<you>/<HF_SPACE>
+make hf-space-remote          # copy the printed `git remote add hf https://...` line and run it
+git push -u hf HEAD:main      # or: make hf-space-push
+```
+
+If `git remote add hf` fails because `hf` already exists, run the `git remote set-url` line printed by `make hf-space-remote`.
+
+Authentication for `git push` uses your Hub credentials (HTTPS + token as password, or [credential helper](https://huggingface.co/docs/hub/git-auth)).
+
+### Troubleshooting
+
+* **Build fails on `COPY models`**: `model.pkl` / `feature_metadata.json` were not in the git revision the Space cloned. Commit them (or fix LFS pull on the Space side).
+* **App shows errors loading the model**: confirm `APP_MODE=embedded` (set in the Dockerfile) and that the pickle was produced by the same code version as `src/housing`.
+* **You do not want the YAML header on GitHub**: remove the `---` … `---` block at the top of this README from your fork and instead set the Space metadata in the Hugging Face Space **Settings** (title, emoji, etc.); the Space will still build from the root `Dockerfile`.
+
+### Local smoke test (same image Spaces runs)
+
+```bash
+docker build -t housing-streamlit-space .
+docker run --rm -p 7860:7860 housing-streamlit-space
+# open http://localhost:7860
+```
 
 ---
 
