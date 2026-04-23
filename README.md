@@ -1,15 +1,3 @@
----
-title: California Housing MLOps
-emoji: 🏠
-colorFrom: blue
-colorTo: green
-sdk: docker
-app_port: 7860
-pinned: false
-license: mit
-short_description: California Housing regression demo (Docker)
----
-
 # MIA-MLOPS-II — California Housing MLOps Project
 
 End-to-end, container-first MLOps project for the MLOps II course (MIA master's degree). It trains, tracks, serves and consumes a **regression** model for scikit-learn's [California Housing dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.fetch_california_housing.html). The target is `MedHouseVal` — median house value per block group, in units of $100,000 — and the feature schema is auto-discovered from the ingested CSV, so the pipeline does not rely on hard-coded column names.
