@@ -1,5 +1,5 @@
 ---
-title: California Housing — MLOps demo
+title: California Housing MLOps
 emoji: 🏠
 colorFrom: blue
 colorTo: green
@@ -7,7 +7,7 @@ sdk: docker
 app_port: 7860
 pinned: false
 license: mit
-short_description: Streamlit regressor for California Housing (embedded model, Docker Space).
+short_description: California Housing regression demo (Docker)
 ---
 
 # MIA-MLOPS-II — California Housing MLOps Project
@@ -42,17 +42,19 @@ A Streamlit frontend is included as the user-facing application and is also pack
 
 ### Components
 
-| Service | Purpose | Port |
-| --- | --- | --- |
-| `postgres` | Backend DB for Airflow and MLflow (two logical databases) | 5433 (host) → 5432 (container) |
-| `minio` | S3-compatible data lake + MLflow artifact store | 9000 (S3), 9001 (console) |
-| `minio-init` | One-shot bucket creation | — |
-| `mlflow` | Tracking server (backend: Postgres, artifacts: MinIO) | 5001 (host) → 5000 (container) |
-| `airflow-init` | One-shot DB migrations + admin user creation | — |
-| `airflow-webserver` | Airflow UI | 8080 |
-| `airflow-scheduler` | DAG scheduler (`LocalExecutor`) | — |
-| `api` | FastAPI inference service | 8000 |
-| `streamlit` | Streamlit frontend calling the API | 8501 |
+
+| Service             | Purpose                                                   | Port                           |
+| ------------------- | --------------------------------------------------------- | ------------------------------ |
+| `postgres`          | Backend DB for Airflow and MLflow (two logical databases) | 5433 (host) → 5432 (container) |
+| `minio`             | S3-compatible data lake + MLflow artifact store           | 9000 (S3), 9001 (console)      |
+| `minio-init`        | One-shot bucket creation                                  | —                              |
+| `mlflow`            | Tracking server (backend: Postgres, artifacts: MinIO)     | 5001 (host) → 5000 (container) |
+| `airflow-init`      | One-shot DB migrations + admin user creation              | —                              |
+| `airflow-webserver` | Airflow UI                                                | 8080                           |
+| `airflow-scheduler` | DAG scheduler (`LocalExecutor`)                           | —                              |
+| `api`               | FastAPI inference service                                 | 8000                           |
+| `streamlit`         | Streamlit frontend calling the API                        | 8501                           |
+
 
 ### End-to-end flow
 
@@ -69,17 +71,19 @@ flowchart LR
     HFSpaces["HF Spaces<br/>(Docker)"] -.->|embedded mode| UI
 ```
 
+
+
 ### Training pipeline (Airflow DAG `california_housing_training`)
 
 ```
 ingest → validate → preprocess → train → register
 ```
 
-* `ingest` calls `sklearn.datasets.fetch_california_housing(as_frame=True)`, writes the dataframe to `data/raw/california_housing.csv` and uploads it to `s3://data-lake/raw/california_housing.csv`. No external credentials are required — the dataset ships with scikit-learn.
-* `validate` runs lightweight, schema-agnostic checks (min row count, target present, numeric, non-null, non-constant) and fails fast if the dataset is corrupted.
-* `preprocess` builds random train/val/test splits and persists them to `data/processed/` as parquet.
-* `train` fits three estimators (`LinearRegression`, `RandomForestRegressor`, `XGBRegressor`) as `Pipeline(preprocessor, estimator)`, each logged as a nested MLflow run with parameters, metrics, the regression diagnostic report, predicted-vs-actual and residual PNGs, and the full sklearn model. 5-fold cross-validation scored with R² is used to compare models robustly.
-* `register` picks the run with the highest `cv_score_mean`, registers the model as `california_housing_regressor` and moves the `champion` alias onto the new version. The API picks up new versions on the next reload.
+- `ingest` calls `sklearn.datasets.fetch_california_housing(as_frame=True)`, writes the dataframe to `data/raw/california_housing.csv` and uploads it to `s3://data-lake/raw/california_housing.csv`. No external credentials are required — the dataset ships with scikit-learn.
+- `validate` runs lightweight, schema-agnostic checks (min row count, target present, numeric, non-null, non-constant) and fails fast if the dataset is corrupted.
+- `preprocess` builds random train/val/test splits and persists them to `data/processed/` as parquet.
+- `train` fits three estimators (`LinearRegression`, `RandomForestRegressor`, `XGBRegressor`) as `Pipeline(preprocessor, estimator)`, each logged as a nested MLflow run with parameters, metrics, the regression diagnostic report, predicted-vs-actual and residual PNGs, and the full sklearn model. 5-fold cross-validation scored with R² is used to compare models robustly.
+- `register` picks the run with the highest `cv_score_mean`, registers the model as `california_housing_regressor` and moves the `champion` alias onto the new version. The API picks up new versions on the next reload.
 
 ### Inference flow
 
@@ -153,9 +157,9 @@ The layout follows [Cookiecutter Data Science](https://cookiecutter-data-science
 
 ### Prerequisites
 
-* Docker Desktop (≥ 6 GB RAM allocated, recommended 8 GB).
-* `docker compose` v2.20+.
-* macOS / Linux / WSL2.
+- Docker Desktop (≥ 6 GB RAM allocated, recommended 8 GB).
+- `docker compose` v2.20+.
+- macOS / Linux / WSL2.
 
 No Python installation is required on the host: everything runs inside containers. **No external credentials are required**: the dataset ships with scikit-learn.
 
@@ -192,13 +196,15 @@ docker compose ps
 
 Once everything is healthy:
 
-| UI | URL | Credentials |
-| --- | --- | --- |
-| Airflow | http://localhost:8080 | `airflow` / `airflow` |
-| MLflow | http://localhost:5001 | — |
-| MinIO console | http://localhost:9001 | `minioadmin` / `minioadmin` |
-| FastAPI Swagger | http://localhost:8000/docs | — |
-| Streamlit | http://localhost:8501 | — |
+
+| UI              | URL                                                      | Credentials                 |
+| --------------- | -------------------------------------------------------- | --------------------------- |
+| Airflow         | [http://localhost:8080](http://localhost:8080)           | `airflow` / `airflow`       |
+| MLflow          | [http://localhost:5001](http://localhost:5001)           | —                           |
+| MinIO console   | [http://localhost:9001](http://localhost:9001)           | `minioadmin` / `minioadmin` |
+| FastAPI Swagger | [http://localhost:8000/docs](http://localhost:8000/docs) | —                           |
+| Streamlit       | [http://localhost:8501](http://localhost:8501)           | —                           |
+
 
 ### Stopping
 
@@ -213,11 +219,11 @@ docker compose down -v        # nuke everything
 
 ### Option A — through Airflow (recommended)
 
-1. Open http://localhost:8080.
+1. Open [http://localhost:8080](http://localhost:8080).
 2. Un-pause the `california_housing_training` DAG.
 3. Click **Trigger DAG**.
 4. Follow the tasks in the *Grid* view — `ingest`, `validate`, `preprocess`, `train`, `register`.
-5. After `train`, visit MLflow at http://localhost:5001 to inspect every run; the parent run is named `training_pipeline` and each child run corresponds to one model family.
+5. After `train`, visit MLflow at [http://localhost:5001](http://localhost:5001) to inspect every run; the parent run is named `training_pipeline` and each child run corresponds to one model family.
 6. After `register`, the API automatically picks up the new champion on its next `/admin/reload` call (or on restart).
 
 Alternatively, trigger the DAG from the CLI:
@@ -254,14 +260,16 @@ docker compose restart api
 
 FastAPI exposes:
 
-| Method | Path | Description |
-| --- | --- | --- |
-| GET | `/` | Service info |
-| GET | `/health` | Health + model-loaded flag |
-| GET | `/model/info` | Model metadata (registry version, feature count, target stats) |
-| POST | `/predict` | Single-record prediction |
-| POST | `/predict/batch` | Batch prediction (up to 1000 records) |
-| POST | `/admin/reload` | Force a model reload from the registry |
+
+| Method | Path             | Description                                                    |
+| ------ | ---------------- | -------------------------------------------------------------- |
+| GET    | `/`              | Service info                                                   |
+| GET    | `/health`        | Health + model-loaded flag                                     |
+| GET    | `/model/info`    | Model metadata (registry version, feature count, target stats) |
+| POST   | `/predict`       | Single-record prediction                                       |
+| POST   | `/predict/batch` | Batch prediction (up to 1000 records)                          |
+| POST   | `/admin/reload`  | Force a model reload from the registry                         |
+
 
 ### Example request
 
@@ -308,40 +316,40 @@ Validation is enforced at two layers:
 
 ## Using the Streamlit app
 
-Open http://localhost:8501. The form is **generated dynamically** from the feature metadata that training writes to `models/feature_metadata.json`, so it automatically adapts to whatever columns the dataset has. The UI shows:
+Open [http://localhost:8501](http://localhost:8501). The form is **generated dynamically** from the feature metadata that training writes to `models/feature_metadata.json`, so it automatically adapts to whatever columns the dataset has. The UI shows:
 
-* the predicted target value formatted as US dollars (for the default `MedHouseVal` target, predictions are automatically converted `value × $100,000`);
-* training-set summary statistics (min / mean / median / max) for context;
-* the raw JSON payload sent to the API (expandable).
+- the predicted target value formatted as US dollars (for the default `MedHouseVal` target, predictions are automatically converted `value × $100,000`);
+- training-set summary statistics (min / mean / median / max) for context;
+- the raw JSON payload sent to the API (expandable).
 
 The app reads `APP_MODE` from the environment:
 
-* `APP_MODE=api` (default, used in docker-compose): calls FastAPI at `API_URL`.
-* `APP_MODE=embedded`: loads `models/model.pkl` directly — used on Hugging Face Spaces.
+- `APP_MODE=api` (default, used in docker-compose): calls FastAPI at `API_URL`.
+- `APP_MODE=embedded`: loads `models/model.pkl` directly — used on Hugging Face Spaces.
 
 ---
 
 ## Deploying the Streamlit app to Hugging Face Spaces
 
-Hugging Face **Docker Spaces** expect a `Dockerfile` at the **repository root**. This repo ships [`Dockerfile`](Dockerfile) (same recipe as [`docker/streamlit-spaces.Dockerfile`](docker/streamlit-spaces.Dockerfile)) plus a small YAML header at the top of this README so the Space card and SDK are picked up automatically when the Space is linked to this GitHub repository.
+Hugging Face **Docker Spaces** expect a `Dockerfile` at the **repository root**. This repo ships `[Dockerfile](Dockerfile)` (same recipe as `[docker/streamlit-spaces.Dockerfile](docker/streamlit-spaces.Dockerfile)`) plus a small YAML header at the top of this README so the Space card and SDK are picked up automatically when the Space is linked to this GitHub repository.
 
 The image:
 
-* sets `APP_MODE=embedded` and loads `models/model.pkl` plus `models/feature_metadata.json` from disk (no FastAPI or MLflow in the Space),
-* installs `libgomp1` for XGBoost wheels on Debian slim,
-* exposes **port 7860** (required by Spaces).
+- sets `APP_MODE=embedded` and loads `models/model.pkl` plus `models/feature_metadata.json` from disk (no FastAPI or MLflow in the Space),
+- installs `libgomp1` for XGBoost wheels on Debian slim,
+- exposes **port 7860** (required by Spaces).
 
 ### Before you push
 
 1. **Train once** so artifacts exist (see [training pipeline](#running-the-training-pipeline)), e.g. `make train-local` or run the Airflow DAG. That produces at least:
-   * `models/model.pkl`
-   * `models/feature_metadata.json`
-2. **Commit those files** to the branch you connect to the Space. The root [`.dockerignore`](.dockerignore) is written so Docker **includes** those two paths even though other files under `models/` stay ignored.
-3. If `model.pkl` is large, track it with **[Git LFS](https://git-lfs.github.com/)** before pushing so the Space build can fetch it.
+  - `models/model.pkl`
+  - `models/feature_metadata.json`
+2. **Commit those files** to the branch you connect to the Space. The root `[.dockerignore](.dockerignore)` is written so Docker **includes** those two paths even though other files under `models/` stay ignored.
+3. Install **[Git LFS](https://git-lfs.github.com/)** (`brew install git-lfs`) — the HF Hub pre-receive hook **rejects** any binary file (`.pkl`, `.parquet`, …) that is not stored in LFS/Xet. The `make hf-space-push` workflow below handles LFS setup automatically on a dedicated deploy branch.
 
 ### Option A — Link this GitHub repo (simplest)
 
-1. **Push** your branch to GitHub (`main` or whichever branch you use) so it includes the root [`Dockerfile`](Dockerfile), `models/model.pkl`, and `models/feature_metadata.json`.
+1. **Push** your branch to GitHub (`main` or whichever branch you use) so it includes the root `[Dockerfile](Dockerfile)`, `models/model.pkl`, and `models/feature_metadata.json`.
 2. On Hugging Face: **New Space** → **Docker** (Docker SDK).
 3. **Connect** your GitHub account and pick this repository and branch.
 4. Leave **Dockerfile** at the repository root (default). Start the build, then open `https://<your-username>-<space-name>.hf.space`.
@@ -359,19 +367,29 @@ Use this if you prefer the Space to live only on Hugging Face (no GitHub link), 
 ```bash
 export HF_SPACE=your-chosen-slug
 make hf-space-create          # creates https://huggingface.co/spaces/<you>/<HF_SPACE>
-make hf-space-remote          # copy the printed `git remote add hf https://...` line and run it
-git push -u hf HEAD:main      # or: make hf-space-push
+make hf-space-remote          # adds (or updates) a git remote named "hf"
+make hf-space-push            # builds a clean orphan branch (LFS) -> force-pushes to hf/main
 ```
 
-If `git remote add hf` fails because `hf` already exists, run the `git remote set-url` line printed by `make hf-space-remote`.
+`make hf-space-push` delegates to `[scripts/deploy_hf_space.sh](scripts/deploy_hf_space.sh)`. The script:
+
+- refuses to run unless `git-lfs`, `models/model.pkl`, `models/feature_metadata.json`, and the root `Dockerfile` are all present;
+- builds a **throwaway worktree** so your checked-out branch is untouched;
+- creates an orphan branch `hf-deploy` containing **only** what the Space needs (`Dockerfile`, `README.md`, `pyproject.toml`, `.dockerignore`, `conf/`, `src/`, `requirements/`, `models/model.pkl`, `models/feature_metadata.json`);
+- configures `.gitattributes` with LFS filters for `*.pkl`, `*.joblib`, `*.parquet`;
+- force-pushes that orphan branch as `hf/main` and removes the temporary worktree.
+
+Use `DRY_RUN=1 make hf-space-push` to build the branch without pushing — useful for inspecting `.git/hf-deploy-worktree/` locally.
 
 Authentication for `git push` uses your Hub credentials (HTTPS + token as password, or [credential helper](https://huggingface.co/docs/hub/git-auth)).
 
 ### Troubleshooting
 
-* **Build fails on `COPY models`**: `model.pkl` / `feature_metadata.json` were not in the git revision the Space cloned. Commit them (or fix LFS pull on the Space side).
-* **App shows errors loading the model**: confirm `APP_MODE=embedded` (set in the Dockerfile) and that the pickle was produced by the same code version as `src/housing`.
-* **You do not want the YAML header on GitHub**: remove the `---` … `---` block at the top of this README from your fork and instead set the Space metadata in the Hugging Face Space **Settings** (title, emoji, etc.); the Space will still build from the root `Dockerfile`.
+- **Push rejected: "contains binary files" / "Please use Xet"**: you pushed a branch with untracked `.pkl` / `.parquet` blobs. Run `make hf-space-push` — it rebuilds a clean LFS-aware branch and force-pushes it.
+- **Build fails on `COPY models`**: `model.pkl` / `feature_metadata.json` were not in the git revision the Space cloned. Commit them (or fix LFS pull on the Space side).
+- **App shows errors loading the model**: confirm `APP_MODE=embedded` (set in the Dockerfile) and that the pickle was produced by the same code version as `src/housing`.
+- **Hub shows `title: {{title}}`, `app_file: app.py`, or similar placeholders**: the Space is not using the **Docker** SDK, or the README metadata was stripped so the Hub fell back to a Gradio-style template. Open the Space on Hugging Face → **Settings** → **Space hardware** / SDK section and set the SDK to **Docker** (not Streamlit or Gradio). Do not add `app_file` for this repo — that key is for Gradio/static Spaces only. The YAML block at the top of this README must include `sdk: docker` and `app_port: 7860` (see [Spaces config reference](https://huggingface.co/docs/hub/spaces-config-reference)).
+- **You do not want the YAML header on GitHub**: remove the `---` … `---` block at the top of this README from your fork and instead set the Space metadata in the Hugging Face Space **Settings** (title, emoji, etc.); the Space will still build from the root `Dockerfile`.
 
 ### Local smoke test (same image Spaces runs)
 
@@ -389,9 +407,9 @@ docker run --rm -p 7860:7860 housing-streamlit-space
 
 `MedHouseVal` is a continuous variable, so we model it as regression:
 
-* Primary CV score: **R²** — unitless, comparable across models, and directly interpretable as "fraction of variance explained".
-* Test metrics also logged: **MAE** (mean absolute error in target units), **RMSE** (penalises large misses harder), **MAPE** (percentage error).
-* Diagnostic artifacts per run: a **predicted-vs-actual** scatter and a **residuals-vs-predicted** plot, both logged to MLflow.
+- Primary CV score: **R²** — unitless, comparable across models, and directly interpretable as "fraction of variance explained".
+- Test metrics also logged: **MAE** (mean absolute error in target units), **RMSE** (penalises large misses harder), **MAPE** (percentage error).
+- Diagnostic artifacts per run: a **predicted-vs-actual** scatter and a **residuals-vs-predicted** plot, both logged to MLflow.
 
 Expected performance out of the box: R² ≈ 0.60 for linear regression and R² ≈ 0.80+ for the tree ensembles (RandomForest, XGBoost), which is typical for this dataset.
 
@@ -429,30 +447,30 @@ You can override the auto-inference by listing columns explicitly under `feature
 
 ### Implemented ✅
 
-* **Cookiecutter Data Science** project structure.
-* **Data pipeline**: ingest (scikit-learn → local CSV → MinIO), lightweight validation (row count, target presence, numeric, non-null, non-constant), preprocess (median imputation + StandardScaler + OneHot in a schema-agnostic `ColumnTransformer`).
-* **Experimentation**: LinearRegression, RandomForestRegressor, XGBRegressor — each evaluated with 5-fold CV on R².
-* **Experiment tracking**: MLflow — parent + nested runs, parameters, metrics (R²/MAE/RMSE/MAPE), regression report, predicted-vs-actual + residual plots, sklearn artifacts, input examples and signatures.
-* **Model selection + artifact management**: best run chosen by `cv_score_mean`, registered, `champion` alias moved atomically.
-* **Orchestration**: Airflow DAG with five sequential tasks.
-* **Model serving (REST)**: FastAPI with Pydantic schemas, `/health`, `/model/info`, `/predict`, `/predict/batch`, `/admin/reload`, CORS, robust lifespan loader.
-* **Frontend**: Streamlit app with API and embedded modes; target-aware formatting (dollars for `MedHouseVal`).
-* **Containers**: Docker Compose with PostgreSQL, MinIO, MLflow, Airflow (LocalExecutor), FastAPI, Streamlit. Healthchecks on every long-running service.
-* **Documentation**: this README, inline docstrings, `.env.example`, Makefile targets.
+- **Cookiecutter Data Science** project structure.
+- **Data pipeline**: ingest (scikit-learn → local CSV → MinIO), lightweight validation (row count, target presence, numeric, non-null, non-constant), preprocess (median imputation + StandardScaler + OneHot in a schema-agnostic `ColumnTransformer`).
+- **Experimentation**: LinearRegression, RandomForestRegressor, XGBRegressor — each evaluated with 5-fold CV on R².
+- **Experiment tracking**: MLflow — parent + nested runs, parameters, metrics (R²/MAE/RMSE/MAPE), regression report, predicted-vs-actual + residual plots, sklearn artifacts, input examples and signatures.
+- **Model selection + artifact management**: best run chosen by `cv_score_mean`, registered, `champion` alias moved atomically.
+- **Orchestration**: Airflow DAG with five sequential tasks.
+- **Model serving (REST)**: FastAPI with Pydantic schemas, `/health`, `/model/info`, `/predict`, `/predict/batch`, `/admin/reload`, CORS, robust lifespan loader.
+- **Frontend**: Streamlit app with API and embedded modes; target-aware formatting (dollars for `MedHouseVal`).
+- **Containers**: Docker Compose with PostgreSQL, MinIO, MLflow, Airflow (LocalExecutor), FastAPI, Streamlit. Healthchecks on every long-running service.
+- **Documentation**: this README, inline docstrings, `.env.example`, Makefile targets.
 
 ### Partially implemented ⚠️
 
-* **Security layers**: CORS middleware and schema validation are in place. An API key / JWT auth dependency is sketched but not enforced (easy to wire via `fastapi.security`).
+- **Security layers**: CORS middleware and schema validation are in place. An API key / JWT auth dependency is sketched but not enforced (easy to wire via `fastapi.security`).
 
 ### Left as future work ❌
 
 The assignment statement references these for the broader federated/cloud service scenario. They are out of scope for the containerised level and not required by the rubric:
 
-* **GraphQL / gRPC / Streaming endpoints** — the service currently exposes only REST. Alternatives could be added as additional FastAPI routers (Strawberry for GraphQL, `grpcio` for gRPC, `fastapi-mqtt` or Kafka for streaming).
-* **Federated learning** — would require multiple training clients and a secure aggregation server (`Flower`, `TFF`). The current Airflow DAG is the centralised counterpart.
-* **Full security layers** — JWT auth, secrets manager, TLS termination, RBAC. Hooks are in place (environment variables, CORS) but the production-grade implementation is not delivered here.
-* **Drift monitoring / model performance monitoring** in production — a natural extension is to add an Evidently report task to the DAG and a Prometheus exporter on the API.
-* **CI/CD** — no GitHub Actions workflow is shipped. `make lint` and `make test` cover local quality gates.
+- **GraphQL / gRPC / Streaming endpoints** — the service currently exposes only REST. Alternatives could be added as additional FastAPI routers (Strawberry for GraphQL, `grpcio` for gRPC, `fastapi-mqtt` or Kafka for streaming).
+- **Federated learning** — would require multiple training clients and a secure aggregation server (`Flower`, `TFF`). The current Airflow DAG is the centralised counterpart.
+- **Full security layers** — JWT auth, secrets manager, TLS termination, RBAC. Hooks are in place (environment variables, CORS) but the production-grade implementation is not delivered here.
+- **Drift monitoring / model performance monitoring** in production — a natural extension is to add an Evidently report task to the DAG and a Prometheus exporter on the API.
+- **CI/CD** — no GitHub Actions workflow is shipped. `make lint` and `make test` cover local quality gates.
 
 ---
 
@@ -507,4 +525,4 @@ See the scikit-learn [documentation](https://scikit-learn.org/stable/modules/gen
 
 ## License
 
-MIT — see [`pyproject.toml`](pyproject.toml).
+MIT — see `[pyproject.toml](pyproject.toml)`.

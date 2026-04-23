@@ -18,7 +18,7 @@ help:
 	@echo "  clean       - Remove local caches"
 	@echo "  hf-space-create - Create an empty Docker Space on the Hub (needs hf auth)"
 	@echo "  hf-space-remote - Print git remote add command for that Space"
-	@echo "  hf-space-push   - Push current branch to Space remote (branch: hf)"
+	@echo "  hf-space-push   - Build orphan 'hf-deploy' branch (LFS) and push to hf/main"
 	@echo "  hf-space-build  - Local docker build (same as HF Space image)"
 
 up:
@@ -65,12 +65,18 @@ hf-space-create:
 hf-space-remote:
 	@u=$$(hf auth whoami --format json 2>/dev/null | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('user') or d.get('name') or '')"); \
 	if [ -z "$$u" ]; then echo "Run: hf auth login   (could not read username)"; exit 1; fi; \
-	echo "git remote add hf https://huggingface.co/spaces/$$u/$(HF_SPACE)"; \
-	echo "# If remote 'hf' already exists: git remote set-url hf https://huggingface.co/spaces/$$u/$(HF_SPACE)"
+	url="https://huggingface.co/spaces/$$u/$(HF_SPACE)"; \
+	if git remote get-url hf >/dev/null 2>&1; then \
+		echo "Updating existing remote 'hf' -> $$url"; \
+		git remote set-url hf "$$url"; \
+	else \
+		echo "Adding remote 'hf' -> $$url"; \
+		git remote add hf "$$url"; \
+	fi
 
 hf-space-push:
 	@test "$$(git remote | grep -x hf)" = "hf" || (echo "Add remote first: make hf-space-remote" && exit 1)
-	git push -u hf HEAD:main
+	bash scripts/deploy_hf_space.sh
 
 hf-space-build:
 	docker build -t hf-california-housing-space .
