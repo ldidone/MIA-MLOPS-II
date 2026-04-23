@@ -1,0 +1,4 @@
+# Developer / CI-only dependencies. Not installed in the runtime images.
+pytest==8.2.2
+pytest-cov==5.0.0
+ruff==0.4.10

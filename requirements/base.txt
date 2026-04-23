@@ -1,0 +1,23 @@
+# Core ML + MLOps dependencies shared by training and inference.
+numpy==1.26.4
+pandas==2.2.2
+scikit-learn==1.4.2
+xgboost==2.0.3
+scipy==1.13.1
+joblib==1.4.2
+pyyaml==6.0.1
+matplotlib==3.8.4
+seaborn==0.13.2
+
+# MLflow + S3-compatible artifact store (MLflow uses boto3 under the hood)
+mlflow==2.13.2
+boto3==1.34.131
+
+# Parquet I/O for the split artifacts handed between Airflow tasks.
+pyarrow==15.0.2
+fsspec==2024.5.0
+
+# Configuration
+pydantic==2.7.4
+pydantic-settings==2.3.4
+python-dotenv==1.0.1

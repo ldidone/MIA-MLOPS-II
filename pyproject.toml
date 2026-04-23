@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "california-housing-mlops"
+version = "0.2.0"
+description = "MLOps II course project: end-to-end regression pipeline for scikit-learn's California Housing dataset."
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "MIA MLOps II" }]
+license = { text = "MIT" }
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["housing*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-ra -q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+# E501: we allow long lines (set line-length=100 above).
+# B008: FastAPI uses Depends(...) in default values as idiomatic dependency injection.
+ignore = ["E501", "B008"]

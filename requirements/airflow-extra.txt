@@ -1,0 +1,3 @@
+# Extra runtime deps installed on top of the Airflow base image.
+# Airflow itself is already provided by the apache/airflow image.
+-r base.txt
