@@ -18,7 +18,7 @@ The project implements the containerised level of the assignment described for *
 
 > Apache Airflow · MLflow · PostgreSQL · MinIO · FastAPI · Docker.
 
-A Streamlit frontend is included as the user-facing application and is also packaged to be deployable as a Docker Space on Hugging Face.
+A Streamlit frontend is included as the user-facing application and is also packaged to be deployable as a Docker Space on Hugging Face. A public instance runs here: [California Housing MLOps — Hugging Face Space](https://huggingface.co/spaces/ldidone/california-housing-mia-mlops-ii).
 
 ---
 
@@ -330,6 +330,8 @@ The app reads `APP_MODE` from the environment:
 ---
 
 ## Deploying the Streamlit app to Hugging Face Spaces
+
+**Live app:** [https://huggingface.co/spaces/ldidone/california-housing-mia-mlops-ii](https://huggingface.co/spaces/ldidone/california-housing-mia-mlops-ii)
 
 Hugging Face **Docker Spaces** expect a `Dockerfile` at the **repository root**. This repo ships `[Dockerfile](Dockerfile)` (same recipe as `[docker/streamlit-spaces.Dockerfile](docker/streamlit-spaces.Dockerfile)`) plus a small YAML header at the top of this README so the Space card and SDK are picked up automatically when the Space is linked to this GitHub repository.
 

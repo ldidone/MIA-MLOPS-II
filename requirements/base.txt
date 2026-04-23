@@ -5,6 +5,8 @@ scikit-learn==1.4.2
 xgboost==2.0.3
 scipy==1.13.1
 joblib==1.4.2
+# Unpickling sklearn/XGBoost pipelines saved with joblib can require dill at runtime.
+dill==0.3.8
 pyyaml==6.0.1
 matplotlib==3.8.4
 seaborn==0.13.2
